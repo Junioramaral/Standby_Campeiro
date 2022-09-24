@@ -16,7 +16,8 @@ HEADLINE
 
 	echo -e "\n\nO Cadastro e configurações aplicado com sucesso"
 	echo -e "\nRemover o diretório de configuração atual que foi usado somente para a configuração"
-	echo -e "\n]\n Executar:  rm -rf ${PWD}"
+	echo -e "\n\n Executar:  rm -rf ${PWD}"
+	echo -e "\n\n\n"
 
 	cd ${DIRAPPLY}
 
@@ -30,20 +31,20 @@ function CRONTAB()
 
 HEADLINE
 
-	echo "Adicionar o codigo abaixo na crontab do user oracle"
-	echo "Depois de Configurado e testado descomentar as linhas dos scripts"
-	echo -e "\n\n\n\n\n"
+	echo "		Adicionar o codigo abaixo na crontab do user oracle"
+	echo "		Depois de Configurado e testado descomentar as linhas dos scripts"
+	echo -e "\n\n\n"
 
 	echo "##################################"
 	echo "# Scripts do Apply standby       #"
 	echo "##################################"
 	echo "# Standby ${oraclesid}"
-	echo "*/5 * * * * /home/oracle/ilegra/standby/${oraclesid}/apply.sh ${oraclesid}"
-	echo -e "\n"
+	echo "#*/5 * * * * /home/oracle/ilegra/standby/${oraclesid}/apply.sh ${oraclesid}"
+	echo "#"
 	echo "# Confere a diferenca de archives entre prod e standby"
-	echo "*/1 * * * * /home/oracle/ilegra/standby/${oraclesid}/diff.sh ${oraclesid}"
+	echo "#*/2 * * * * /home/oracle/ilegra/standby/${oraclesid}/diff.sh ${oraclesid}"
 
-	echo -e "\n\n\n"
+	echo -e "\n\n"
 
 	read -p 'As Informações Foram adicionadas corretamente na crontab (y/n) ? ' asnyn
 	case ${asnyn} in
@@ -217,7 +218,7 @@ HEADLINE
 	echo -e "\n"
 	echo ". /home/oracle/${oraclesid}.env"
 	
-	echo -e "\n\n\n"
+	echo -e "\n"
 	
 	echo "## Standby Parameters ##"
 	echo -e "\n"
@@ -258,7 +259,7 @@ HEADLINE
 	    echo "STBY_DATAFILE=$stbydatafile"
 	fi
 	
-	echo -e "\n\n\n"
+	echo -e "\n"
 	
 	echo "## Production Parameters ##"
 	echo -e "\n"
@@ -277,7 +278,7 @@ HEADLINE
 	  && printf '%s=%s\n' "$var" "${!var}"
 	done
 
-	echo -e "\n\n\n"
+	echo -e "\n"
 
 	read -p 'As Informações Estão corretas (y/n) ? ' asnyn
 	case ${asnyn} in
@@ -300,6 +301,7 @@ function CADASTRO()
 HEADLINE
 
 # Standby
+echo -e "\n# Standby\n"
 read -p 'ORACLE_SID - Oracle Sid do Standby : ' oraclesid
 read -p 'STBY_ARCH - Caminho absoluto dos archives do Standby : ' stby_arch
 
@@ -315,12 +317,14 @@ case ${asmtofs} in
 esac
 
 # Produção
+echo -e "\n\n# Produção\n"
 read -p 'PWD - Password do System : ' ppwd
 read -p 'PROD_SN - Service Name da Produção : ' prodsn
 read -p 'PROD_ARCH - Caminho absoluto dos archives em Produção : ' prod_arch
 read -p 'CLUSTER - Ambiente de Produção está em Cluster (Y/N)? ' cluster
 case ${cluster} in
     y|Y )
+		echo -e "\n"
 		echo -e "Configure Cluster Instance\n"
 		read -p '	PROD_IP1  - IP do No 1  - Produção : ' PROD_IP1
 		read -p '	PROD_IP2  - IP do No 2  - Produção : ' PROD_IP2
@@ -328,12 +332,14 @@ case ${cluster} in
 		read -p '	PROD_SID2 - SID do No 2 - Produção : ' PROD_SID2
     ;;
     [Nn]* )
+		echo -e "\n"
 		echo -e "Configure Single Instance\n"
 		read -p '	PROD_IP1  - IP  do No 1 - Produção : ' PROD_IP1
 		read -p '	PROD_SID1 - SID do No 1 - Produção : ' PROD_SID1
     ;;
 esac
 
+echo -e "\n"
 read -p 'LOG_RETENTION - Numero em dias para retenção dos logs "Enter to Default [30] : ' logretenntion
 logretenntion=${logretenntion:-30}
 
