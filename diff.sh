@@ -84,7 +84,7 @@ if [ "$CLUSTER" == "Y" ]
 then
 	if [ -z $DIFF_SEQ1 ] || [ -z $DIFF_SEQ2 ] ;then
 	
-	   echo "Variavel nula" > $SCRIPT_HOME/error.log
+	   echo "$(date) - INFO: Variavel nula" > $SCRIPT_HOME/error.log
 	
 	else
 	
@@ -102,7 +102,7 @@ else
 	if [ -z $DIFF_SEQ1 ]
 	then
 	
-	   echo "Variavel nula" > $SCRIPT_HOME/error.log
+	   echo "$(date) - INFO: Variavel nula" > $SCRIPT_HOME/error.log
 	
 	else
 	

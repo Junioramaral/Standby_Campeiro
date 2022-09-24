@@ -31,6 +31,7 @@ EOF
     LOG
   fi
 }
+
 function DELETE_ARCHIVES()
 {
    if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Funcao DELETE_ARCHIVES - Inicio"; fi
@@ -143,8 +144,8 @@ function GETFILES()
   spool off;
   EXIT;
 EOF
+
   # Remove linha em branco no final do arquivo $SCRIPT_HOME/archivestoget1.log
-  #sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' $SCRIPT_HOME/archivestoget1.log
   sed -i '/^$/d' $SCRIPT_HOME/archivestoget1.log
 )
 
@@ -157,8 +158,8 @@ EOF
   spool off;
   EXIT;
 EOF
+
   # Remove linha em branco no final do arquivo $SCRIPT_HOME/archivestoget2.log
-  #sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' $SCRIPT_HOME/archivestoget2.log
   sed -i '/^$/d' $SCRIPT_HOME/archivestoget2.log
 )
 
@@ -170,18 +171,21 @@ echo $PROD_ARCH1 >> $LOGFILE
 
 function LOG()
 {
-  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO:Funcao LOG - Inicio -"; fi
+  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Funcao LOG - Inicio -"; fi
 
-  find $SCRIPT_LOGS -name '*.log' -ctime +3 -exec rm -f {} \;
-  #PURGE DOS ARCHIVES NO STANDBY ANTES DE INICIAR
+  find $SCRIPT_LOGS -name '*.log' -ctime +{$LOG_RETENTION} -exec rm -f {} \;
+  
   find /u01/app/oracle/fra/orcl/archives -name '*.dbf' -mmin +1440 -exec rm -f {} \;
   LOGFILE=$SCRIPT_LOGS/apply_$ORACLE_SID_`date +%Y%m%d_%H%M%S`.log
   echo "Iniciando o Recover $(date)" >> $LOGFILE
 
-#ssh $PROD_IP1 'ls -l /mnt/archives'
-#ssh $PROD_IP2 'ls -l /mnt/archives'
+	if [ $DEBUG -gt 0 ]
+	then echo "$(date) - INFO: Funcao Lista arquives nos ambientes - Inicio -"
 
-#ssh $PROD_IP1 'ls -l /u01/archives'
+		ssh $PROD_IP1 'ls -l /mnt/archives'
+		ssh $PROD_IP2 'ls -l /mnt/archives'
+
+	fi
 
   GETFILES
   APPLY
@@ -206,6 +210,9 @@ function RUNNING()
 function LOCK()
 {
 
+# Testando se o Ambiente esta em Cluster ou não
+if [ "$CLUSTER" == "Y" ]
+then
   if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Funcao LOCK - Inicio -"; fi
 
   PROD_SEQ1=$(sqlplus -s $PROD_CRED@$PROD_IP1/$PROD_SN/$PROD_SID1 <<EOF
@@ -254,9 +261,43 @@ EOF
     then
       if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Diferenca maior que MAX_DIFF $MAX_DIFF - Saindo... -"; fi
       exit 0
-#    else
-#      RUNNING
   fi
+
+else
+
+  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Funcao LOCK - Inicio -"; fi
+
+  PROD_SEQ1=$(sqlplus -s $PROD_CRED@$PROD_IP1/$PROD_SN/$PROD_SID1 <<EOF
+  SET show OFF pagesize 0 feedback OFF termout ON TIME OFF timing OFF verify OFF echo OFF
+  SELECT max(sequence#) FROM v\$log_history where thread# = 1;
+  EXIT;
+EOF
+)
+
+  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: PROD_SEQ1=$PROD_SEQ1"; fi
+
+  STBY_SEQ1=$(sqlplus -s "/ as sysdba" <<EOF
+  SET show OFF pagesize 0 feedback OFF termout ON TIME OFF timing OFF verify OFF echo OFF
+  SELECT max(sequence#) FROM v\$log_history where thread# = 1;
+  EXIT;
+EOF
+)
+
+  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: STBY_SEQ1=$STBY_SEQ1 -"; fi
+
+  DIFF_SEQ1=$(expr $PROD_SEQ1 - $STBY_SEQ1)
+
+  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: DIFF_SEQ1=$DIFF_SEQ1"; fi
+
+
+  if [ "$DIFF_SEQ1" -ge "$MAX_DIFF"  ] ;
+  then
+      if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Diferenca maior que MAX_DIFF $MAX_DIFF - Saindo..."; fi
+      exit 0
+  fi
+
+fi	
+
 }
 
 LOCK
