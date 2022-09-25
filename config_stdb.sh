@@ -1,6 +1,6 @@
 #!/bin/bash
 
-. $HOME/ilegra/variable_conf.env
+. ${PWD}/variable_conf.env
 
 function HEADLINE(){
 	clear
@@ -208,6 +208,12 @@ function GERAR_ENV()
 	  declare -p $var > /dev/null 2>&1 \
 	  && printf '%s=%s\n' "$var" "${!var}" >> ${oraclesid}_std.env
 	done
+
+	# Variacles
+	PROD_CRED=system/${PWD}
+	PROD_IP1=${PROD_IP1}
+	PROD_SID1=${PROD_SID1}
+
 
 CRIA_DIR
 
