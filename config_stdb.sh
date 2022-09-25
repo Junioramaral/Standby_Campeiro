@@ -1,5 +1,6 @@
 #!/bin/bash
 
+#Envs
 . ${PWD}/variable_conf.env
 
 function HEADLINE(){
@@ -66,17 +67,21 @@ HEADLINE
 ############################################################
 # Informações a serem Verificado e adicionados em produção #
 ############################################################
+. $HOME/${oraclesid}.env
+echo ". $HOME/${oraclesid}.env"
+
 function ADD_INFOS()
 {
 
-. /home/oracle/${oraclesid}.env
+#Envs
+. $HOME/${oraclesid}.env
 
 HEADLINE
 
 	LOG_MODE=$(sqlplus -s $PROD_CRED@$PROD_IP1/$PROD_SN/$PROD_SID1 <<EOF
 	  SET show OFF pagesize 0 feedback OFF termout ON TIME OFF timing OFF verify OFF echo OFF
 	  col force_logging FOR a13
-	  SELECT force_logging FROM   v\$database;
+	  SELECT force_logging FROM v\$database;
 	  EXIT;
 EOF
 )
