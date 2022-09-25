@@ -157,6 +157,10 @@ VAR
 function GERAR_ENV()
 {
 
+	if [ -f "${oraclesid}_std.env" ]; then
+    	rm ${oraclesid}_std.env
+    fi
+
 	echo "#######################################################################################################################"  >> ${oraclesid}_std.env
 	echo "## Standby Parameters ##"  >> ${oraclesid}_std.env
 	echo "#"  >> ${oraclesid}_std.env
@@ -202,7 +206,7 @@ function GERAR_ENV()
 	
 	echo -e "\n## Production Parameters ##"  >> ${oraclesid}_std.env
 	echo -e "\n" >> ${oraclesid}_std.env
-	echo "PWD=system/$ppwd" >> ${oraclesid}_std.env
+	echo "PROD_CRED=system/$ppwd" >> ${oraclesid}_std.env
 	echo "PROD_SN=$prodsn" >> ${oraclesid}_std.env
 	
 	echo -e "\n# PROD_IP[1,2] e PROD_SID[1,2] - IP(s) e SID(s) do Servidor de Produção" >> ${oraclesid}_std.env
@@ -213,7 +217,7 @@ function GERAR_ENV()
 	done
 
 	# Variacles
-	PROD_CRED=system/${PWD}
+	PROD_CRED=system/${ppwd}
 	PROD_IP1=${PROD_IP1}
 	PROD_SID1=${PROD_SID1}
 
@@ -282,7 +286,7 @@ HEADLINE
 	
 	
 	echo -e "\n# PROD_CRED - Senha de system da producão"
-	echo "PWD=system/$ppwd"
+	echo "PROD_CRED=system/$ppwd"
 	
 	echo -e "\n# PROD_SN - Service Name da Produção"
 	echo "PROD_SN=$prodsn"
@@ -334,7 +338,7 @@ esac
 
 # Produção
 echo -e "\n\n# Produção\n"
-read -p 'PWD - Password do System : ' ppwd
+read -p 'PROD_CRED - Password do System : ' ppwd
 read -p 'PROD_SN - Service Name da Produção : ' prodsn
 read -p 'PROD_ARCH - Caminho absoluto dos archives em Produção : ' prod_arch
 read -p 'CLUSTER - Ambiente de Produção está em Cluster (Y/N)? ' cluster
