@@ -1,12 +1,14 @@
 #!/bin/bash
 
+. $HOME/ilegra/variable_conf.env
+
 function HEADLINE(){
 	clear
 	echo -e "\n\n"
-	echo "----------------------------------------------------------------"
-	echo "-- Configurar dados do standby - $(date) --"
-	echo "----------------------------------------------------------------"
-	echo -e "\n\n"
+	echo "		----------------------------------------------------------------"
+	echo "		-- Configurar dados do standby - $(date) --"
+	echo "		----------------------------------------------------------------"
+	echo -e "\n"
 }
 
 function END()
@@ -14,9 +16,9 @@ function END()
 
 HEADLINE
 
-	echo -e "\n\nO Cadastro e configurações aplicado com sucesso"
-	echo -e "\nRemover o diretório de configuração atual que foi usado somente para a configuração"
-	echo -e "\n\n Executar:  rm -rf ${PWD}"
+	echo -e "\n\n 		O Cadastro e configurações aplicado com sucesso"
+	echo -e "\n 		Remover o diretório de configuração atual que foi usado somente para a configuração"
+	echo -e "\n\n  			Executar:  rm -rf ${PWD}"
 	echo -e "\n\n\n"
 
 	cd ${DIRAPPLY}
@@ -140,7 +142,7 @@ function GERAR_ENV()
 
 	echo "## Oracle Settings ##"  >> ${oraclesid}_std.env
 	echo -e "\n" >> ${oraclesid}_std.env
-	echo ". /home/oracle/${oraclesid}.env"  >> ${oraclesid}_std.env
+	echo ". /home/oracle/${oraclesid}_std.env"  >> ${oraclesid}_std.env
 	
 	echo -e "\n\n\n" >> ${oraclesid}_std.env
 	
@@ -216,12 +218,12 @@ HEADLINE
 
 	echo "## Oracle Settings ##"
 	echo -e "\n"
-	echo ". /home/oracle/${oraclesid}.env"
+	echo ". /home/oracle/${oraclesid}_std.env"
 	
 	echo -e "\n"
 	
 	echo "## Standby Parameters ##"
-	echo -e "\n"
+	echo "##"
 	
 	echo "# DEBUG - Habilita debug no log do apply"
 	echo "DEBUG=1"
@@ -262,7 +264,7 @@ HEADLINE
 	echo -e "\n"
 	
 	echo "## Production Parameters ##"
-	echo -e "\n"
+	echo "##"
 	
 	
 	echo -e "\n# PROD_CRED - Senha de system da producão"
