@@ -23,7 +23,7 @@ HEADLINE
 	echo -e "\n\n\n"
 
 	#cd /home/oracle/ilegra
-    $CD ${DIRAPPLY}
+    cd ${DIRAPPLY}
     rm -rf ${DIRAPPLY}/config_stdb.sh
     rm -rf ${DIRAPPLY}/variable_conf.env
 
@@ -65,19 +65,6 @@ HEADLINE
 }
 
 ############################################################
-# Carregar as variaveis de ambiente                        #
-############################################################
-#function VAR()
-# {
-#
-##Envs
-#. $HOME/${oraclesid}.env
-#echo ". $HOME/${oraclesid}.env"
-#
-#ADD_INFOS	
-#}
-
-############################################################
 # Informações a serem Verificado e adicionados em produção #
 ############################################################
 function ADD_INFOS()
@@ -99,6 +86,9 @@ EOF
 	  EXIT;
 EOF
 )
+
+	echo -e "\nConfirmar se as informações abaixo estão corretas, se SIM Adicionar em Produção "
+	echo " "
 
 	if [ "$LOG_MODE" == "YES" ]
 	then
@@ -147,7 +137,6 @@ function CRIA_DIR()
 
 	cp ./*  $DIRAPPLY
 
-#VAR
 ADD_INFOS
 
 }
@@ -180,12 +169,14 @@ function GERAR_ENV()
 	echo "#"  >> ${oraclesid}_std.env
 
 	echo "## Production Parameters ##"  >> ${oraclesid}_std.env
-	echo -e "\n# PROD_CRED - Senha de system da producão" >> ${oraclesid}_std.env
+	echo "#"  >> ${oraclesid}_std.env
+	echo "# PROD_CRED - Senha de system da producão" >> ${oraclesid}_std.env
 	echo "# PROD_SN - Service Name da Produção" >> ${oraclesid}_std.env
 	echo "# PROD_IP[1,2] e PROD_SID[1,2] - IP(s) e SID(s) do Servidor de Produção" >> ${oraclesid}_std.env
 	echo "#######################################################################################################################"  >> ${oraclesid}_std.env
 
 	echo -e "\n## Oracle Settings ##"  >> ${oraclesid}_std.env
+	echo " "  >> ${oraclesid}_std.env
 	echo ". /home/oracle/${oraclesid}_std.env"  >> ${oraclesid}_std.env
 	
 	echo -e "\n## Standby Parameters ##"  >> ${oraclesid}_std.env
@@ -206,11 +197,10 @@ function GERAR_ENV()
 	fi
 	
 	echo -e "\n## Production Parameters ##"  >> ${oraclesid}_std.env
-	echo -e "\n" >> ${oraclesid}_std.env
+	echo " " >> ${oraclesid}_std.env
 	echo "PROD_CRED=system/$ppwd" >> ${oraclesid}_std.env
 	echo "PROD_SN=$prodsn" >> ${oraclesid}_std.env
 	
-	echo -e "\n# PROD_IP[1,2] e PROD_SID[1,2] - IP(s) e SID(s) do Servidor de Produção" >> ${oraclesid}_std.env
 	for var in PROD_IP1 PROD_IP2 PROD_SID1 PROD_SID2
 	do
 	  declare -p $var > /dev/null 2>&1 \
