@@ -150,61 +150,52 @@ ADD_INFOS
 function GERAR_ENV()
 {
 
+	echo "#######################################################################################################################"  >> ${oraclesid}_std.env
+	echo "## Standby Parameters ##"  >> ${oraclesid}_std.env
+	echo -e "\n# DEBUG - Habilita debug no log do apply" >> ${oraclesid}_std.env
+	echo "# CLUSTER - Informa se o Standby será configurado para Cluster ou Single" >> ${oraclesid}_std.env
+	echo "# ORACLE_SID - SID da Instancia do Stanby" >> ${oraclesid}_std.env
+	echo "# STD_HOME - Diretório onde ficam todos os arquivos do standby" >> ${oraclesid}_std.env
+	echo "# LOG_DIR_APPLY - Diretório dos logs do apply" >> ${oraclesid}_std.env
+	echo "# LOG_DIR_APPLY_RECOVERY - Diretório dos logs do apply" >> ${oraclesid}_std.env
+	echo "# MAX_DIFF - Diferença maxima aceita entre produção e standby" >> ${oraclesid}_std.env
+	echo "# ASMTOFS - Flag para conversão de ASM para Filesystem, preencher com Y caso tenha que converter de ASM para FileSystem" >> ${oraclesid}_std.env
+	echo "# STBY_ARCH - Caminho absoluto dos archives do standby" >> ${oraclesid}_std.env
+	echo "# LOG_RETENTION - Numero em dias para retenção dos logs" >> ${oraclesid}_std.env
+	echo "# STBY_DATAFILE - Caminho absoluto dos datafiles do standby" >> ${oraclesid}_std.env
+	
+	echo -e "\n## Production Parameters ##"  >> ${oraclesid}_std.env
+	echo -e "\n# PROD_CRED - Senha de system da producão" >> ${oraclesid}_std.env
+	echo "# PROD_SN - Service Name da Produção" >> ${oraclesid}_std.env
+	echo "# PROD_IP[1,2] e PROD_SID[1,2] - IP(s) e SID(s) do Servidor de Produção" >> ${oraclesid}_std.env
+	echo "#######################################################################################################################"  >> ${oraclesid}_std.env
+	----
+
 	echo "## Oracle Settings ##"  >> ${oraclesid}_std.env
 	echo -e "\n" >> ${oraclesid}_std.env
 	echo ". /home/oracle/${oraclesid}_std.env"  >> ${oraclesid}_std.env
 	
-	echo -e "\n\n\n" >> ${oraclesid}_std.env
-	
-	echo "## Standby Parameters ##"  >> ${oraclesid}_std.env
+	echo -e "\n## Standby Parameters ##"  >> ${oraclesid}_std.env
 	echo -e "\n" >> ${oraclesid}_std.env
-	
-	echo "# DEBUG - Habilita debug no log do apply" >> ${oraclesid}_std.env
 	echo "DEBUG=1" >> ${oraclesid}_std.env
-	
-	echo -e "\n# CLUSTER - Informa se o Standby será configurado para Cluster ou Single" >> ${oraclesid}_std.env
 	echo "CLUSTER=${cluster^^}" >> ${oraclesid}_std.env
-	
-	echo -e "\n# ORACLE_SID - SID da Instancia do Stanby" >> ${oraclesid}_std.env
 	echo "ORACLE_SID=${oraclesid}" >> ${oraclesid}_std.env
-	
-	echo -e "\n# STD_HOME - Diretório onde ficam todos os arquivos do standby" >> ${oraclesid}_std.env
 	echo "STD_HOME=/home/oracle/ilegra/standby/${oraclesid}" >> ${oraclesid}_std.env
-	
-	echo -e "\n# LOG_DIR_APPLY - Diretório dos logs do apply" >> ${oraclesid}_std.env
 	echo "LOG_DIR_APPLY=/home/oracle/ilegra/standby/${oraclesid}/logs" >> ${oraclesid}_std.env
-	
-	echo -e "\n# LOG_DIR_APPLY_RECOVERY - Diretório dos logs do apply" >> ${oraclesid}_std.env
 	echo "LOG_DIR_APPLY_RECOVERY=/home/oracle/ilegra/standby${oraclesid}/logs_recovery" >> ${oraclesid}_std.env
-	
-	echo -e "\n# MAX_DIFF - Diferença maxima aceita entre produção e standby" >> ${oraclesid}_std.env
 	echo "MAX_DIFF=500" >> ${oraclesid}_std.env
-	
-	echo -e "\n# ASMTOFS - Flag para conversão de ASM para Filesystem, preencher com Y caso tenha que converter de ASM para FileSystem" >> ${oraclesid}_std.env
 	echo "ASMTOFS=$ASMTOFS" >> ${oraclesid}_std.env
-	
-	echo -e "\n# STBY_ARCH - Caminho absoluto dos archives do standby" >> ${oraclesid}_std.env
 	echo "STBY_ARCH=$stby_arch" >> ${oraclesid}_std.env
-	
-	echo -e "\n# LOG_RETENTION - Numero em dias para retenção dos logs" >> ${oraclesid}_std.env
 	echo "STBY_ARCH=$logretenntion" >> ${oraclesid}_std.env
 	
 	if [[ -v stbydatafile ]];
 	then
-		echo -e "\n# STBY_DATAFILE - Caminho absoluto dos datafiles do standby" >> ${oraclesid}_std.env
 	    echo "STBY_DATAFILE=$stbydatafile"  >> ${oraclesid}_std.env
 	fi
 	
-	echo -e "\n\n\n" >> ${oraclesid}_std.env
-	
-	echo "## Production Parameters ##"  >> ${oraclesid}_std.env
+	echo -e "\n## Production Parameters ##"  >> ${oraclesid}_std.env
 	echo -e "\n" >> ${oraclesid}_std.env
-	
-	
-	echo -e "\n# PROD_CRED - Senha de system da producão" >> ${oraclesid}_std.env
 	echo "PWD=system/$ppwd" >> ${oraclesid}_std.env
-	
-	echo -e "\n# PROD_SN - Service Name da Produção" >> ${oraclesid}_std.env
 	echo "PROD_SN=$prodsn" >> ${oraclesid}_std.env
 	
 	echo -e "\n# PROD_IP[1,2] e PROD_SID[1,2] - IP(s) e SID(s) do Servidor de Produção" >> ${oraclesid}_std.env
