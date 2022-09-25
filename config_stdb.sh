@@ -67,15 +67,15 @@ HEADLINE
 ############################################################
 # Carregar as variaveis de ambiente                        #
 ############################################################
-function VAR()
-{
-
-#Envs
-. $HOME/${oraclesid}.env
-echo ". $HOME/${oraclesid}.env"
-
-ADD_INFOS	
-}
+#function VAR()
+# {
+#
+##Envs
+#. $HOME/${oraclesid}.env
+#echo ". $HOME/${oraclesid}.env"
+#
+#ADD_INFOS	
+#}
 
 ############################################################
 # Informações a serem Verificado e adicionados em produção #
@@ -112,7 +112,7 @@ EOF
 
 		echo -e "\nALTER DATABASE FORCE LOGGING;"	
 		echo -e "\nALTER SYSTEM SET log_archive_dest_1='LOCATION=${LOCATION_ARCH}' SCOPE=both;"
-		echo "ALTER SYSTEM SET log_archive_dest_2='LOCATION=${PROD_ARCH} OPTIONAL' scope=bboth;"
+		echo "ALTER SYSTEM SET log_archive_dest_2='LOCATION=${prod_arch} OPTIONAL' scope=bboth;"
 
 	fi
 
@@ -147,7 +147,8 @@ function CRIA_DIR()
 
 	cp ./*  $DIRAPPLY
 
-VAR
+#VAR
+ADD_INFOS
 
 }
 
@@ -197,7 +198,7 @@ function GERAR_ENV()
 	echo "MAX_DIFF=500" >> ${oraclesid}_std.env
 	echo "ASMTOFS=$ASMTOFS" >> ${oraclesid}_std.env
 	echo "STBY_ARCH=$stby_arch" >> ${oraclesid}_std.env
-	echo "STBY_ARCH=$logretenntion" >> ${oraclesid}_std.env
+	echo "LOG_RETENTION=$logretenntion" >> ${oraclesid}_std.env
 	
 	if [[ -v stbydatafile ]];
 	then
@@ -218,6 +219,7 @@ function GERAR_ENV()
 
 	# Variacles
 	PROD_CRED=system/${ppwd}
+	PROD_SN=${prodsn}
 	PROD_IP1=${PROD_IP1}
 	PROD_SID1=${PROD_SID1}
 
@@ -235,7 +237,7 @@ function VERIFY_INFOS()
 HEADLINE
 
 	echo "## Oracle Settings ##"
-	echo -e "\n"
+	echo " "
 	echo ". /home/oracle/${oraclesid}_std.env"
 	
 	echo -e "\n"
