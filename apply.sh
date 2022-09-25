@@ -53,7 +53,7 @@ exit;
 EOF
 )
 
-echo $RM >> $LOGFILE
+echo $RM >> $LOGFILE_APPLY
 
 $RM
 
@@ -73,23 +73,23 @@ echo "0" > $SCRIPT_HOME/running.log
 exit 0
 }
 
-function CHECK_01110()
+function CHECK_01110()    ----   trabalhando aqui
 {
 
   if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Funcao CHECK_01110 - Inicio - "; fi
 
-  VER=$(cat $LOGFILE | grep ORA-01110 | head -n 1 | awk {'print $5'})
-  DFN=$(cat $LOGFILE | grep ORA-01110 | head -n 1 | awk '{print $4}' | cut -f1 -d':')
+  VER=$(cat $LOGFILE_APPLY | grep ORA-01110 | head -n 1 | awk {'print $5'})
+  DFN=$(cat $LOGFILE_APPLY | grep ORA-01110 | head -n 1 | awk '{print $4}' | cut -f1 -d':')
 
   if [ "$DFN" != ""  ]; then
     if [ "$DFN" = "1" ]; then
-      echo "Two Process running together" >> $LOGFILE
+      echo "Two Process running together" >> $LOGFILE_APPLY
        echo "0" > $SCRIPT_HOME/running.log
       exit
     fi
     ADD_NEW
   else
-    echo  "NENHUM NOVO DATAFILE PARA SER ADICIONADO" >>  $LOGFILE
+    echo  "NENHUM NOVO DATAFILE PARA SER ADICIONADO" >>  $LOGFILE_APPLY
     DELETE_ARCHIVES
   fi
 }
@@ -97,31 +97,53 @@ function CHECK_01110()
 function APPLY()
 {
 
-if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO:Funcao APPLY - Inicio -"; fi
+  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Funcao APPLY - Inicio -"; fi
 
-paste -d '\n' $SCRIPT_HOME/archivestoget1.log $SCRIPT_HOME/archivestoget2.log  > $SCRIPT_HOME/archives_files.log
-  # Remove linha em branco no final do arquivo $SCRIPT_HOME/archives_files.log
-  sed -i '/^$/d' $SCRIPT_HOME/archives_files.log
+  # Testando se o Ambiente esta em Cluster ou não
+  if [ "$CLUSTER" == "Y" ]
+  then
 
-while read line; do
-  if [ $DEBUG -gt 0 ]; then echo "Buscando arquivo $line - `date`"; fi
-  rsync -avc $PROD_IP1:$line $STBY_ARCH >> $LOGFILE
-  rsync -avc $PROD_IP2:$line $STBY_ARCH >> $LOGFILE
-done < $SCRIPT_HOME/archives_files.log
+    # faz a União dos arquivos gerando em sequencia para executar o rsync
+    paste -d '\n' $SCRIPT_HOME/archivestoget1.log $SCRIPT_HOME/archivestoget2.log  > $SCRIPT_HOME/archives_files.log
+    
+    # Remove linha em branco no final do arquivo $SCRIPT_HOME/archives_files.log
+    sed -i '/^$/d' $SCRIPT_HOME/archives_files.log
 
-echo "Vou entrar no teste de recover"
+    while read line; do
+      if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Buscando arquivo $line -"; fi
+      rsync -avc $PROD_IP1:$line $STBY_ARCH >> $LOGFILE_APPLY
+      rsync -avc $PROD_IP2:$line $STBY_ARCH >> $LOGFILE_APPLY
+    done < $SCRIPT_HOME/archives_files.log
 
-until cat ${STD_HOME}/running_recover.log 2>/dev/null | grep -w '0' > /dev/null
-do      
-        echo "Aguardando Processo recovery adicionado por conta do link concluir."
-        cat ${STD_HOME}/running_recover.log
-        sleep 10
-done
+  else
 
-echo "saindo do teste de recover"
+    $SCRIPT_HOME/archivestoget1.log > $SCRIPT_HOME/archives_files.log
 
-  echo "Recover In Progress" >> $LOGFILE
-  sqlplus -s "/as sysdba" <<EOF >> $LOGFILE
+    # Remove linha em branco no final do arquivo $SCRIPT_HOME/archives_files.log
+    sed -i '/^$/d' $SCRIPT_HOME/archives_files.log
+
+    while read line; do
+      if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Buscando arquivo $line -"; fi
+      rsync -avc $PROD_IP1:$line $STBY_ARCH >> $LOGFILE_APPLY
+    done < $SCRIPT_HOME/archives_files.log
+
+  fi
+
+
+  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Entrando no teste de recover - Inicio -"; fi
+
+  until cat ${STD_HOME}/running_recover.log 2>/dev/null | grep -w '0' > /dev/null
+  do      
+          echo "Aguardando Processo recovery adicionado por conta do link concluir."
+          cat ${STD_HOME}/running_recover.log
+          sleep 10
+  done
+
+  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Saindo no teste de recover - Inicio -"; fi
+
+
+  echo "$(date) - INFO: Recover In Progress - Inicio -" >> $LOGFILE_APPLY
+  sqlplus -s "/as sysdba" <<EOF >> $LOGFILE_APPLY
   set pagesize 0 feedback on verify off heading off echo off
   set lines 200 pages 2000
   set autorecovery on
@@ -130,60 +152,90 @@ echo "saindo do teste de recover"
   exit;
 EOF
 
+  echo "$(date) - INFO: Recover In Progress - Fim -" >> $LOGFILE_APPLY
+
   CHECK_01110
 }
 
 function GETFILES()
 {
+
+# Testando se o Ambiente esta em Cluster ou não
+if [ "$CLUSTER" == "Y" ]
+then
+
   if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Funcao GETFILES - Inicio - "; fi
 
-  PROD_ARCH1=$(sqlplus -s $PROD_CRED@$PROD_IP1/$PROD_SN/$PROD_SID1 << EOF
+  PROD_ARCH1=$(sqlplus -s $PROD_CRED@$PROD_IP1/$PROD_SN/$PROD_SID1 <<EOF
   SET show OFF pagesize 0 feedback OFF termout ON TIME OFF timing OFF verify OFF trims ON
   spool $SCRIPT_HOME/archivestoget1.log;
   select name from v\$archived_log where dest_id = 2 and THREAD# = 1 and SEQUENCE# between $STBY_SEQ1 and $PROD_SEQ1;
   spool off;
   EXIT;
 EOF
-
-  # Remove linha em branco no final do arquivo $SCRIPT_HOME/archivestoget1.log
-  sed -i '/^$/d' $SCRIPT_HOME/archivestoget1.log
 )
 
-  if [ $DEBUG -gt 0 ]; then cat $SCRIPT_HOME/archivestoget1.log >> $LOGFILE; fi
 
-  PROD_ARCH2=$(sqlplus -s $PROD_CRED@$PROD_IP2/$PROD_SN/$PROD_SID2 << EOF
+  if [ $DEBUG -gt 0 ]; then cat $SCRIPT_HOME/archivestoget1.log >> $LOGFILE_APPLY; fi
+
+  PROD_ARCH2=$(sqlplus -s $PROD_CRED@$PROD_IP2/$PROD_SN/$PROD_SID2 <<EOF
   SET show OFF pagesize 0 feedback OFF termout ON TIME OFF timing OFF verify OFF trims ON
   spool $SCRIPT_HOME/archivestoget2.log;
   select name from v\$archived_log where dest_id = 2 and THREAD# = 2 and SEQUENCE# between $STBY_SEQ2 and $PROD_SEQ2;
   spool off;
   EXIT;
 EOF
-
-  # Remove linha em branco no final do arquivo $SCRIPT_HOME/archivestoget2.log
-  sed -i '/^$/d' $SCRIPT_HOME/archivestoget2.log
 )
 
-echo $PROD_ARCH2 >> $LOGFILE
-echo $PROD_ARCH1 >> $LOGFILE
+    # Remove linha em branco no final do arquivo $SCRIPT_HOME/archivestoget1.log
+    sed -i '/^$/d' $SCRIPT_HOME/archivestoget1.log
 
-  if [ $DEBUG -gt 0 ]; then cat $SCRIPT_HOME/archivestoget2.log >> $LOGFILE; fi
+    # Remove linha em branco no final do arquivo $SCRIPT_HOME/archivestoget2.log
+    sed -i '/^$/d' $SCRIPT_HOME/archivestoget2.log
+
+    echo $PROD_ARCH1 >> $LOGFILE_APPLY
+    echo $PROD_ARCH2 >> $LOGFILE_APPLY
+
+else
+
+  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Funcao GETFILES - Inicio - "; fi
+
+  PROD_ARCH1=$(sqlplus -s $PROD_CRED@$PROD_IP1/$PROD_SN/$PROD_SID1 <<EOF
+  SET show OFF pagesize 0 feedback OFF termout ON TIME OFF timing OFF verify OFF trims ON
+  spool $SCRIPT_HOME/archivestoget1.log;
+  select name from v\$archived_log where dest_id = 2 and THREAD# = 1 and SEQUENCE# between $STBY_SEQ1 and $PROD_SEQ1;
+  spool off;
+  EXIT;
+EOF
+)
+
+    # Remove linha em branco no final do arquivo $SCRIPT_HOME/archivestoget1.log
+    sed -i '/^$/d' $SCRIPT_HOME/archivestoget1.log
+
+    echo $PROD_ARCH1 >> $LOGFILE_APPLY
+
+fi
+
 }
 
 function LOG()
 {
   if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Funcao LOG - Inicio -"; fi
 
-  find $SCRIPT_LOGS -name '*.log' -ctime +{$LOG_RETENTION} -exec rm -f {} \;
+  find $LOG_DIR_APPLY          -name '*.log' -ctime +{$LOG_RETENTION} -exec rm -f {} \;
+  find $LOG_DIR_APPLY_RECOVERY -name '*.log' -ctime +{$LOG_RETENTION} -exec rm -f {} \;
   
   find /u01/app/oracle/fra/orcl/archives -name '*.dbf' -mmin +1440 -exec rm -f {} \;
-  LOGFILE=$SCRIPT_LOGS/apply_$ORACLE_SID_`date +%Y%m%d_%H%M%S`.log
-  echo "Iniciando o Recover $(date)" >> $LOGFILE
+
+  LOGFILE_APPLY=$LOG_DIR_APPLY/apply_$ORACLE_SID_`date +%Y%m%d_%H%M%S`.log
+
+  LOGFILE_RECOVERY=$LOG_DIR_APPLY_RECOVERY/recovery_$ORACLE_SID_`date +%Y%m%d_%H%M%S`.log
 
 	if [ $DEBUG -gt 0 ]
-	then echo "$(date) - INFO: Funcao Lista arquives nos ambientes - Inicio -"
+	then echo "$(date) - INFO: Funcao Lista arquives nos ambientes de prod - Inicio -"
 
-		ssh $PROD_IP1 'ls -l /mnt/archives'
-		ssh $PROD_IP2 'ls -l /mnt/archives'
+		ssh $PROD_IP1 'ls -l ${PROD_ARCH}'
+		ssh $PROD_IP2 'ls -l ${PROD_ARCH}'
 
 	fi
 
@@ -194,7 +246,7 @@ function LOG()
 function RUNNING()
 {
 
-  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO:Funcao RUNNING - Inicio -"; fi
+  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Funcao RUNNING - Inicio -"; fi
 
   RUN=$(cat $SCRIPT_HOME/running.log)
   if [ "$RUN" -eq "1" ]
@@ -202,6 +254,7 @@ function RUNNING()
       if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Script ainda rodando. Saindo... - "; fi
       exit 0
     else
+      if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Adicionando 1 ao arquivo running... - "; fi
       echo "1" > $SCRIPT_HOME/running.log
       LOG
   fi

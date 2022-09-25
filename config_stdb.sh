@@ -23,7 +23,7 @@ HEADLINE
 	echo -e "\n\n\n"
 
 	#cd /home/oracle/ilegra
-    cd ${DIRAPPLY}
+    cd $HOME
     rm -rf ${DIRAPPLY}/config_stdb.sh
     rm -rf ${DIRAPPLY}/variable_conf.env
 
@@ -126,16 +126,17 @@ EOF
 function CRIA_DIR()
 {
 
-	DIRAPPLY="/home/oracle/ilegra/standby/${oraclesid}"
-	DIRLOGSAPPLY="${DIRAPPLY}/logs"
-	DIRLOGSDIFF="${DIRAPPLY}/logs_diff"
-	DIRLOGSRECOVER="${DIRAPPLY}/logs_recovery"
+	SCRIPT_HOME="/home/oracle/ilegra/standby/${oraclesid}"
+	DIRLOGSAPPLY="${SCRIPT_HOME}/logs"
+	DIRLOGSDIFF="${SCRIPT_HOME}/logs_diff"
+	DIRLOGSRECOVER="${SCRIPT_HOME}/logs_recovery"
 	
-	[ ! -d "$DIRLOGS" ] && mkdir -p "$DIRLOGSAPPLY"
-	[ ! -d "$DIRLOGS" ] && mkdir -p "$DIRLOGSDIFF"
-	[ ! -d "$DIRLOGS" ] && mkdir -p "$DIRLOGSRECOVER"
+	[ ! -d "$SCRIPT_HOME" ]    && mkdir -p "$SCRIPT_HOME"
+	[ ! -d "$DIRLOGSAPPLY" ]   && mkdir -p "$DIRLOGSAPPLY"
+	[ ! -d "$DIRLOGSDIFF" ]    && mkdir -p "$DIRLOGSDIFF"
+	[ ! -d "$DIRLOGSRECOVER" ] && mkdir -p "$DIRLOGSRECOVER"
 
-	cp ./*  $DIRAPPLY
+	cp ./*  $SCRIPT_HOME
 
 ADD_INFOS
 
@@ -157,7 +158,7 @@ function GERAR_ENV()
 	echo "# DEBUG - Habilita debug no log do apply" >> ${oraclesid}_std.env
 	echo "# CLUSTER - Informa se o Standby será configurado para Cluster ou Single" >> ${oraclesid}_std.env
 	echo "# ORACLE_SID - SID da Instancia do Stanby" >> ${oraclesid}_std.env
-	echo "# STD_HOME - Diretório onde ficam todos os arquivos do standby" >> ${oraclesid}_std.env
+	echo "# SCRIPT_HOME - Diretório onde ficam todos os arquivos do standby" >> ${oraclesid}_std.env
 	echo "# LOG_DIR_APPLY - Diretório dos logs do apply" >> ${oraclesid}_std.env
 	echo "# LOG_DIR_APPLY_RECOVERY - Diretório dos logs do apply" >> ${oraclesid}_std.env
 	echo "# MAX_DIFF - Diferença maxima aceita entre produção e standby" >> ${oraclesid}_std.env
@@ -173,6 +174,7 @@ function GERAR_ENV()
 	echo "# PROD_CRED - Senha de system da producão" >> ${oraclesid}_std.env
 	echo "# PROD_SN - Service Name da Produção" >> ${oraclesid}_std.env
 	echo "# PROD_IP[1,2] e PROD_SID[1,2] - IP(s) e SID(s) do Servidor de Produção" >> ${oraclesid}_std.env
+	echo "# PROD_ARCH - Caminho absoluto dos archives em Produção" >> ${oraclesid}_std.env
 	echo "#######################################################################################################################"  >> ${oraclesid}_std.env
 
 	echo -e "\n## Oracle Settings ##"  >> ${oraclesid}_std.env
@@ -180,7 +182,8 @@ function GERAR_ENV()
 	echo ". /home/oracle/${oraclesid}_std.env"  >> ${oraclesid}_std.env
 	
 	echo -e "\n## Standby Parameters ##"  >> ${oraclesid}_std.env
-	echo "DEBUG=1" >> ${oraclesid}_std.env
+	echo "DEBUG=0" >> ${oraclesid}_std.env
+	echo "SCRIPT_HOME=/home/oracle/ilegra/standby/${oraclesid}" >> ${oraclesid}_std.env
 	echo "CLUSTER=${cluster^^}" >> ${oraclesid}_std.env
 	echo "ORACLE_SID=${oraclesid}" >> ${oraclesid}_std.env
 	echo "STD_HOME=/home/oracle/ilegra/standby/${oraclesid}" >> ${oraclesid}_std.env
@@ -207,11 +210,14 @@ function GERAR_ENV()
 	  && printf '%s=%s\n' "$var" "${!var}" >> ${oraclesid}_std.env
 	done
 
+	echo "PROD_ARCH={prod_arch}" >> ${oraclesid}_std.env
+
 	# Variacles
 	PROD_CRED=system/${ppwd}
 	PROD_SN=${prodsn}
 	PROD_IP1=${PROD_IP1}
 	PROD_SID1=${PROD_SID1}
+	PROD_ARCH={prod_arch}
 
 
 CRIA_DIR
@@ -236,7 +242,7 @@ HEADLINE
 	echo "##"
 	
 	echo "# DEBUG - Habilita debug no log do apply"
-	echo "DEBUG=1"
+	echo "DEBUG=0"
 	
 	echo -e "\n# CLUSTER - Informa se o Standby será configurado para Cluster ou Single"
 	echo "CLUSTER=${cluster^^}"
@@ -290,6 +296,10 @@ HEADLINE
 	  && printf '%s=%s\n' "$var" "${!var}"
 	done
 
+	echo " "
+	echo "PROD_ARCH - Caminho absoluto dos archives em Produção"
+	echo "PROD_ARCH={prod_arch}"
+
 	echo -e "\n"
 
 	read -p 'As Informações Estão corretas (y/n) ? ' asnyn
@@ -315,7 +325,8 @@ HEADLINE
 # Standby
 echo -e "\n# Standby\n"
 read -p 'ORACLE_SID - Oracle Sid do Standby : ' oraclesid
-read -p 'STBY_ARCH - Caminho absoluto dos archives do Standby : ' stby_arch
+read -p 'STBY_ARCH - Caminho absoluto dos archives do Standby "Digite [Enter] to Default [/u01/archives] : ' stby_arch
+stby_arch=${stby_arch:-/u01/archives}
 
 read -p 'ASMTOFS - Irá converter ASM to FS (y/n) ? ' asmtofs
 case ${asmtofs} in
@@ -352,7 +363,7 @@ case ${cluster} in
 esac
 
 echo -e "\n"
-read -p 'LOG_RETENTION - Numero em dias para retenção dos logs "Enter to Default [30] : ' logretenntion
+read -p 'LOG_RETENTION - Numero em dias para retenção dos logs "Digite [Enter] to Default [30] : ' logretenntion
 logretenntion=${logretenntion:-30}
 
 VERIFY_INFOS
