@@ -65,16 +65,23 @@ HEADLINE
 }
 
 ############################################################
-# Informações a serem Verificado e adicionados em produção #
+# Carregar as variaveis de ambiente                        #
 ############################################################
-. $HOME/${oraclesid}.env
-echo ". $HOME/${oraclesid}.env"
-
-function ADD_INFOS()
+function VAR()
 {
 
 #Envs
 . $HOME/${oraclesid}.env
+echo ". $HOME/${oraclesid}.env"
+
+ADD_INFOS	
+}
+
+############################################################
+# Informações a serem Verificado e adicionados em produção #
+############################################################
+function ADD_INFOS()
+{
 
 HEADLINE
 
@@ -140,7 +147,7 @@ function CRIA_DIR()
 
 	cp ./*  $DIRAPPLY
 
-ADD_INFOS
+VAR
 
 }
 
@@ -152,7 +159,8 @@ function GERAR_ENV()
 
 	echo "#######################################################################################################################"  >> ${oraclesid}_std.env
 	echo "## Standby Parameters ##"  >> ${oraclesid}_std.env
-	echo -e "\n# DEBUG - Habilita debug no log do apply" >> ${oraclesid}_std.env
+	echo "#"  >> ${oraclesid}_std.env
+	echo "# DEBUG - Habilita debug no log do apply" >> ${oraclesid}_std.env
 	echo "# CLUSTER - Informa se o Standby será configurado para Cluster ou Single" >> ${oraclesid}_std.env
 	echo "# ORACLE_SID - SID da Instancia do Stanby" >> ${oraclesid}_std.env
 	echo "# STD_HOME - Diretório onde ficam todos os arquivos do standby" >> ${oraclesid}_std.env
@@ -164,19 +172,18 @@ function GERAR_ENV()
 	echo "# LOG_RETENTION - Numero em dias para retenção dos logs" >> ${oraclesid}_std.env
 	echo "# STBY_DATAFILE - Caminho absoluto dos datafiles do standby" >> ${oraclesid}_std.env
 	
-	echo -e "\n## Production Parameters ##"  >> ${oraclesid}_std.env
+	echo "#"  >> ${oraclesid}_std.env
+
+	echo "## Production Parameters ##"  >> ${oraclesid}_std.env
 	echo -e "\n# PROD_CRED - Senha de system da producão" >> ${oraclesid}_std.env
 	echo "# PROD_SN - Service Name da Produção" >> ${oraclesid}_std.env
 	echo "# PROD_IP[1,2] e PROD_SID[1,2] - IP(s) e SID(s) do Servidor de Produção" >> ${oraclesid}_std.env
 	echo "#######################################################################################################################"  >> ${oraclesid}_std.env
-	----
 
-	echo "## Oracle Settings ##"  >> ${oraclesid}_std.env
-	echo -e "\n" >> ${oraclesid}_std.env
+	echo -e "\n## Oracle Settings ##"  >> ${oraclesid}_std.env
 	echo ". /home/oracle/${oraclesid}_std.env"  >> ${oraclesid}_std.env
 	
 	echo -e "\n## Standby Parameters ##"  >> ${oraclesid}_std.env
-	echo -e "\n" >> ${oraclesid}_std.env
 	echo "DEBUG=1" >> ${oraclesid}_std.env
 	echo "CLUSTER=${cluster^^}" >> ${oraclesid}_std.env
 	echo "ORACLE_SID=${oraclesid}" >> ${oraclesid}_std.env
