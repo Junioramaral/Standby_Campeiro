@@ -21,7 +21,10 @@ HEADLINE
 	echo -e "\n\n  			Executar:  rm -rf ${PWD}"
 	echo -e "\n\n\n"
 
-	cd ${DIRAPPLY}
+	#cd /home/oracle/ilegra
+    $CD ${DIRAPPLY}
+    rm -rf ${DIRAPPLY}/config_stdb.sh
+    rm -rf ${DIRAPPLY}/variable_conf.env
 
 }
 
@@ -66,6 +69,8 @@ HEADLINE
 function ADD_INFOS()
 {
 
+. /home/oracle/${oraclesid}.env
+
 HEADLINE
 
 	LOG_MODE=$(sqlplus -s $PROD_CRED@$PROD_IP1/$PROD_SN/$PROD_SID1 <<EOF
@@ -76,7 +81,7 @@ HEADLINE
 EOF
 )
 
-	LOCATION_ARCH=$(sqlplus -s / as sysdba <<EOF
+	LOCATION_ARCH=$(sqlplus -s $PROD_CRED@$PROD_IP1/$PROD_SN/$PROD_SID1 <<EOF
 	  SET show OFF pagesize 0 feedback OFF termout ON TIME OFF timing OFF verify OFF echo OFF
 	  select substr(value,10,20) from v\$parameter where name = 'log_archive_dest_1';
 	  EXIT;
@@ -85,7 +90,7 @@ EOF
 
 	if [ "$LOG_MODE" == "YES" ]
 	then
-		if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: FORCE LOGGING MODE=$LOG_MODE"; fi
+		if [ $DEBUG -gt 0 ]; then echo -e "\n$(date) - INFO: FORCE LOGGING MODE=$LOG_MODE"; fi
 		
 		echo -e "\nALTER SYSTEM SET log_archive_dest_1='LOCATION=${LOCATION_ARCH}' SCOPE=both;"
 		echo "ALTER SYSTEM SET log_archive_dest_2='LOCATION=${PROD_ARCH} OPTIONAL' scope=bboth;"
