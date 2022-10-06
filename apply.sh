@@ -1,4 +1,4 @@
-!/bin/bash
+#!/bin/bash
 
 #Envs
 . $HOME/ilegra/standby/$1/$1_std.env
@@ -73,7 +73,7 @@ echo "0" > $SCRIPT_HOME/running.log
 exit 0
 }
 
-function CHECK_01110()    ----   trabalhando aqui
+function CHECK_01110()    #----   trabalhando aqui
 {
 
   if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Funcao CHECK_01110 - Inicio - "; fi
@@ -250,10 +250,10 @@ function RUNNING()
 
   RUN=$(cat $SCRIPT_HOME/running.log)
   if [ "$RUN" -eq "1" ]
-    then
+  then
       if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Script ainda rodando. Saindo... - "; fi
       exit 0
-    else
+  else
       if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Adicionando 1 ao arquivo running... - "; fi
       echo "1" > $SCRIPT_HOME/running.log
       LOG

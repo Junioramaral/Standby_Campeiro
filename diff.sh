@@ -122,6 +122,7 @@ fi
 if [ "$CLUSTER" == "Y" ]
 then
 
+	echo -e "\n-- $(date) --"
 	echo "-----------------------------"
 	echo "-- Analise das informações --"
 	echo -e "-----------------------------\n"
@@ -136,6 +137,7 @@ then
 
 else
 
+	echo -e "\n-- $(date) --"
 	echo "-----------------------------"
 	echo "-- Analise das informações --"
 	echo -e "-----------------------------\n"

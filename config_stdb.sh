@@ -95,14 +95,14 @@ EOF
 		if [ $DEBUG -gt 0 ]; then echo -e "\n$(date) - INFO: FORCE LOGGING MODE=$LOG_MODE"; fi
 		
 		echo -e "\nALTER SYSTEM SET log_archive_dest_1='LOCATION=${LOCATION_ARCH}' SCOPE=both;"
-		echo "ALTER SYSTEM SET log_archive_dest_2='LOCATION=${PROD_ARCH} OPTIONAL' scope=bboth;"
+		echo "ALTER SYSTEM SET log_archive_dest_2='LOCATION=${PROD_ARCH} OPTIONAL' scope=both;"
 
 	else
 		if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: FORCE LOGGING MODE=$LOG_MODE"; fi
 
 		echo -e "\nALTER DATABASE FORCE LOGGING;"	
 		echo -e "\nALTER SYSTEM SET log_archive_dest_1='LOCATION=${LOCATION_ARCH}' SCOPE=both;"
-		echo "ALTER SYSTEM SET log_archive_dest_2='LOCATION=${prod_arch} OPTIONAL' scope=bboth;"
+		echo "ALTER SYSTEM SET log_archive_dest_2='LOCATION=${prod_arch} OPTIONAL' scope=both;"
 
 	fi
 
@@ -179,7 +179,7 @@ function GERAR_ENV()
 
 	echo -e "\n## Oracle Settings ##"  >> ${oraclesid}_std.env
 	echo " "  >> ${oraclesid}_std.env
-	echo ". /home/oracle/${oraclesid}_std.env"  >> ${oraclesid}_std.env
+	echo ". /home/oracle/${oraclesid}.env"  >> ${oraclesid}_std.env
 	
 	echo -e "\n## Standby Parameters ##"  >> ${oraclesid}_std.env
 	echo "DEBUG=0" >> ${oraclesid}_std.env
@@ -234,7 +234,7 @@ HEADLINE
 
 	echo "## Oracle Settings ##"
 	echo " "
-	echo ". /home/oracle/${oraclesid}_std.env"
+	echo ". /home/oracle/${oraclesid}.env"
 	
 	echo -e "\n"
 	
