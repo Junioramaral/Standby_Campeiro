@@ -155,7 +155,7 @@ function GERAR_ENV()
 	echo "#######################################################################################################################"  >> ${oraclesid}_std.env
 	echo "## Standby Parameters ##"  >> ${oraclesid}_std.env
 	echo "#"  >> ${oraclesid}_std.env
-	echo "# DEBUG - Habilita debug no log do apply" >> ${oraclesid}_std.env
+	echo "# DEBUG - Habilita debug no log do apply (0=Sem Debug, 1=Normal Debug, 2=Debug com pausas" >> ${oraclesid}_std.env
 	echo "# CLUSTER - Informa se o Standby será configurado para Cluster ou Single" >> ${oraclesid}_std.env
 	echo "# ORACLE_SID - SID da Instancia do Stanby" >> ${oraclesid}_std.env
 	echo "# SCRIPT_HOME - Diretório onde ficam todos os arquivos do standby" >> ${oraclesid}_std.env
@@ -171,6 +171,7 @@ function GERAR_ENV()
 
 	echo "## Production Parameters ##"  >> ${oraclesid}_std.env
 	echo "#"  >> ${oraclesid}_std.env
+	echo "# PROD_CRED_SYS - Senha de system da producão" >> ${oraclesid}_std.env
 	echo "# PROD_CRED - Senha de system da producão" >> ${oraclesid}_std.env
 	echo "# PROD_SN - Service Name da Produção" >> ${oraclesid}_std.env
 	echo "# PROD_IP[1,2] e PROD_SID[1,2] - IP(s) e SID(s) do Servidor de Produção" >> ${oraclesid}_std.env
@@ -201,6 +202,7 @@ function GERAR_ENV()
 	
 	echo -e "\n## Production Parameters ##"  >> ${oraclesid}_std.env
 	echo " " >> ${oraclesid}_std.env
+	echo "PROD_CRED_SYS=sys/$ppwdsys" >> ${oraclesid}_std.env
 	echo "PROD_CRED=system/$ppwd" >> ${oraclesid}_std.env
 	echo "PROD_SN=$prodsn" >> ${oraclesid}_std.env
 	
@@ -210,7 +212,7 @@ function GERAR_ENV()
 	  && printf '%s=%s\n' "$var" "${!var}" >> ${oraclesid}_std.env
 	done
 
-	echo "PROD_ARCH={prod_arch}" >> ${oraclesid}_std.env
+	echo "PROD_ARCH=${prod_arch}" >> ${oraclesid}_std.env
 
 	# Variacles
 	PROD_CRED=system/${ppwd}
@@ -241,7 +243,7 @@ HEADLINE
 	echo "## Standby Parameters ##"
 	echo "##"
 	
-	echo "# DEBUG - Habilita debug no log do apply"
+	echo "# DEBUG - Habilita debug no log do apply, Default=0"
 	echo "DEBUG=0"
 	
 	echo -e "\n# CLUSTER - Informa se o Standby será configurado para Cluster ou Single"
@@ -282,6 +284,8 @@ HEADLINE
 	echo "## Production Parameters ##"
 	echo "##"
 	
+	echo -e "\n# PROD_CRED_SYS - Senha de sys da producão"
+	echo "PROD_CRED_SYS=sys/$ppwdsys"
 	
 	echo -e "\n# PROD_CRED - Senha de system da producão"
 	echo "PROD_CRED=system/$ppwd"
@@ -341,6 +345,7 @@ esac
 
 # Produção
 echo -e "\n\n# Produção\n"
+read -p 'PROD_CRED_SYS - Password do Sys : ' ppwdsys
 read -p 'PROD_CRED - Password do System : ' ppwd
 read -p 'PROD_SN - Service Name da Produção : ' prodsn
 read -p 'PROD_ARCH - Caminho absoluto dos archives em Produção : ' prod_arch

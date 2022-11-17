@@ -6,7 +6,7 @@
 function ADD_NEW()
 {
 
-  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Funcao ADD_NEW - Inicio "; fi
+  if [ $DEBUG == 1 ]; then echo "$(date) - INFO: Funcao ADD_NEW - Inicio "; fi
 
   DAT=$(sqlplus -s $PROD_CRED@$PROD_IP1/$PROD_SN/$PROD_SID1 <<EOF
   SET show OFF pagesize 0 feedback OFF termout ON TIME OFF timing OFF verify OFF echo OFF
@@ -32,9 +32,11 @@ EOF
   fi
 }
 
+# Function DELETE_ARCHIVES , se basea nos archives aplicados no Standby
 function DELETE_ARCHIVES()
 {
-   if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Funcao DELETE_ARCHIVES - Inicio"; fi
+
+   if [ $DEBUG == 1 ]; then echo "$(date) - INFO: Funcao DELETE_ARCHIVES - Inicio"; fi
 
 STBY_ARCH=$(echo $STBY_ARCH | tr -d ' ')
 STBY_SEQ1=$(echo $STBY_SEQ1 | tr -d ' ')
@@ -42,14 +44,14 @@ PROD_SEQ1=$(echo $PROD_SEQ1 | tr -d ' ')
 STBY_SEQ2=$(echo $STBY_SEQ2 | tr -d ' ')
 PROD_SEQ2=$(echo $PROD_SEQ2 | tr -d ' ')
 
-RM=$(sqlplus -s $PROD_CRED@$PROD_IP1/$PROD_SN/$PROD_SID1 <<EOF
+RM=$(sqlplus -s "/ as sysdba" <<EOF
 SET show OFF pagesize 0 feedback OFF termout ON TIME OFF timing OFF verify OFF trims ON
-SELECT 'rm -f $STBY_ARCH/'|| REPLACE(NAME, regexp_substr(NAME, '.*/')) file_name FROM v\$archived_log WHERE dest_id = 2 AND thread# = 1
-AND sequence# < '$STBY_SEQ1'-10 and name IS NOT NULL
+SELECT 'rm -f $STBY_ARCH/'|| REPLACE(NAME, regexp_substr(NAME, '.*/')) file_name FROM v\$archived_log WHERE dest_id = 1 AND thread# = 1
+AND sequence# between $STBY_SEQ1 and $PROD_SEQ1
 UNION ALL
-SELECT 'rm -f $STBY_ARCH/'|| REPLACE(NAME, regexp_substr(NAME, '.*/')) file_name FROM v\$archived_log WHERE dest_id = 2 AND thread# = 2
-AND sequence# < '$STBY_SEQ2'-10 and name IS NOT NULL;
-exit;
+SELECT 'rm -f $STBY_ARCH/'|| REPLACE(NAME, regexp_substr(NAME, '.*/')) file_name FROM v\$archived_log WHERE dest_id = 1 AND thread# = 2
+AND sequence# between $STBY_SEQ2 and $PROD_SEQ2;
+  EXIT;
 EOF
 )
 
@@ -60,14 +62,14 @@ $RM
 sed 's/^/rm -f /' $SCRIPT_HOME/archivestoget1.log > $SCRIPT_HOME/rmarchivestoget1.sh
 chmod +x $SCRIPT_HOME/rmarchivestoget1.sh
 scp -p $SCRIPT_HOME/rmarchivestoget1.sh $PROD_IP1:/tmp
-ssh $PROD_IP1 /tmp/rmarchivestoget1.sh
-ssh $PROD_IP1 rm -f /tmp/rmarchivestoget1.sh
+#ssh $PROD_IP1 /tmp/rmarchivestoget1.sh
+#ssh $PROD_IP1 rm -f /tmp/rmarchivestoget1.sh
 
 sed 's/^/rm -f /' $SCRIPT_HOME/archivestoget2.log > $SCRIPT_HOME/rmarchivestoget2.sh
 chmod +x $SCRIPT_HOME/rmarchivestoget2.sh
 scp -p $SCRIPT_HOME/rmarchivestoget2.sh $PROD_IP2:/tmp
-ssh $PROD_IP2 /tmp/rmarchivestoget2.sh
-ssh $PROD_IP2 rm -f /tmp/rmarchivestoget2.sh
+#ssh $PROD_IP2 /tmp/rmarchivestoget2.sh
+#ssh $PROD_IP2 rm -f /tmp/rmarchivestoget2.sh
 
 echo "0" > $SCRIPT_HOME/running.log
 exit 0
@@ -76,7 +78,7 @@ exit 0
 function CHECK_01110()    #----   trabalhando aqui
 {
 
-  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Funcao CHECK_01110 - Inicio - "; fi
+  if [ $DEBUG == 1 ]; then echo "$(date) - INFO: Funcao CHECK_01110 - Inicio - "; fi
 
   VER=$(cat $LOGFILE_APPLY | grep ORA-01110 | head -n 1 | awk {'print $5'})
   DFN=$(cat $LOGFILE_APPLY | grep ORA-01110 | head -n 1 | awk '{print $4}' | cut -f1 -d':')
@@ -89,7 +91,7 @@ function CHECK_01110()    #----   trabalhando aqui
     fi
     ADD_NEW
   else
-    echo  "NENHUM NOVO DATAFILE PARA SER ADICIONADO" >>  $LOGFILE_APPLY
+    echo -e "NENHUM NOVO DATAFILE PARA SER ADICIONADO\n" >>  $LOGFILE_APPLY
     DELETE_ARCHIVES
   fi
 }
@@ -97,7 +99,7 @@ function CHECK_01110()    #----   trabalhando aqui
 function APPLY()
 {
 
-  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Funcao APPLY - Inicio -"; fi
+  if [ $DEBUG == 1 ]; then echo "$(date) - INFO: Funcao APPLY - Inicio -"; fi
 
   # Testando se o Ambiente esta em Cluster ou não
   if [ "$CLUSTER" == "Y" ]
@@ -110,7 +112,7 @@ function APPLY()
     sed -i '/^$/d' $SCRIPT_HOME/archives_files.log
 
     while read line; do
-      if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Buscando arquivo $line -"; fi
+      if [ $DEBUG == 1 ]; then echo "$(date) - INFO: Buscando arquivo $line -"; fi
       rsync -avc $PROD_IP1:$line $STBY_ARCH >> $LOGFILE_APPLY
       rsync -avc $PROD_IP2:$line $STBY_ARCH >> $LOGFILE_APPLY
     done < $SCRIPT_HOME/archives_files.log
@@ -123,14 +125,14 @@ function APPLY()
     sed -i '/^$/d' $SCRIPT_HOME/archives_files.log
 
     while read line; do
-      if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Buscando arquivo $line -"; fi
+      if [ $DEBUG == 1 ]; then echo "$(date) - INFO: Buscando arquivo $line -"; fi
       rsync -avc $PROD_IP1:$line $STBY_ARCH >> $LOGFILE_APPLY
     done < $SCRIPT_HOME/archives_files.log
 
   fi
 
 
-  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Entrando no teste de recover - Inicio -"; fi
+  if [ $DEBUG == 1 ]; then echo "$(date) - INFO: Entrando no teste de recover - Inicio -"; fi
 
   until cat ${STD_HOME}/running_recover.log 2>/dev/null | grep -w '0' > /dev/null
   do      
@@ -139,7 +141,7 @@ function APPLY()
           sleep 10
   done
 
-  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Saindo no teste de recover - Inicio -"; fi
+  if [ $DEBUG == 1 ]; then echo "$(date) - INFO: Saindo no teste de recover - Inicio -"; fi
 
 
   echo "$(date) - INFO: Recover In Progress - Inicio -" >> $LOGFILE_APPLY
@@ -164,7 +166,7 @@ function GETFILES()
 if [ "$CLUSTER" == "Y" ]
 then
 
-  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Funcao GETFILES - Inicio - "; fi
+  if [ $DEBUG == 1 ]; then echo "$(date) - INFO: Funcao GETFILES - Inicio - "; fi
 
   PROD_ARCH1=$(sqlplus -s $PROD_CRED@$PROD_IP1/$PROD_SN/$PROD_SID1 <<EOF
   SET show OFF pagesize 0 feedback OFF termout ON TIME OFF timing OFF verify OFF trims ON
@@ -176,7 +178,7 @@ EOF
 )
 
 
-  if [ $DEBUG -gt 0 ]; then cat $SCRIPT_HOME/archivestoget1.log >> $LOGFILE_APPLY; fi
+  if [ $DEBUG == 1 ]; then cat $SCRIPT_HOME/archivestoget1.log >> $LOGFILE_APPLY; fi
 
   PROD_ARCH2=$(sqlplus -s $PROD_CRED@$PROD_IP2/$PROD_SN/$PROD_SID2 <<EOF
   SET show OFF pagesize 0 feedback OFF termout ON TIME OFF timing OFF verify OFF trims ON
@@ -198,7 +200,7 @@ EOF
 
 else
 
-  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Funcao GETFILES - Inicio - "; fi
+  if [ $DEBUG == 1 ]; then echo "$(date) - INFO: Funcao GETFILES - Inicio - "; fi
 
   PROD_ARCH1=$(sqlplus -s $PROD_CRED@$PROD_IP1/$PROD_SN/$PROD_SID1 <<EOF
   SET show OFF pagesize 0 feedback OFF termout ON TIME OFF timing OFF verify OFF trims ON
@@ -220,18 +222,18 @@ fi
 
 function LOG()
 {
-  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Funcao LOG - Inicio -"; fi
+  if [ $DEBUG == 1 ]; then echo "$(date) - INFO: Funcao LOG - Inicio -"; fi
 
   find $LOG_DIR_APPLY          -name '*.log' -ctime +{$LOG_RETENTION} -exec rm -f {} \;
   find $LOG_DIR_APPLY_RECOVERY -name '*.log' -ctime +{$LOG_RETENTION} -exec rm -f {} \;
   
-  find /u01/app/oracle/fra/orcl/archives -name '*.dbf' -mmin +1440 -exec rm -f {} \;
+  find ${STBY_ARCH} -name '*.dbf' -mmin +1440 -exec rm -f {} \;
 
   LOGFILE_APPLY=$LOG_DIR_APPLY/apply_$ORACLE_SID_`date +%Y%m%d_%H%M%S`.log
 
   LOGFILE_RECOVERY=$LOG_DIR_APPLY_RECOVERY/recovery_$ORACLE_SID_`date +%Y%m%d_%H%M%S`.log
 
-	if [ $DEBUG -gt 0 ]
+	if [ $DEBUG == 1 ]
 	then echo "$(date) - INFO: Funcao Lista arquives nos ambientes de prod - Inicio -"
 
 		ssh $PROD_IP1 'ls -l ${PROD_ARCH}'
@@ -246,15 +248,15 @@ function LOG()
 function RUNNING()
 {
 
-  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Funcao RUNNING - Inicio -"; fi
+  if [ $DEBUG == 1 ]; then echo "$(date) - INFO: Funcao RUNNING - Inicio -"; fi
 
   RUN=$(cat $SCRIPT_HOME/running.log)
   if [ "$RUN" -eq "1" ]
   then
-      if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Script ainda rodando. Saindo... - "; fi
+      if [ $DEBUG == 1 ]; then echo "$(date) - INFO: Script ainda rodando. Saindo... - "; fi
       exit 0
   else
-      if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Adicionando 1 ao arquivo running... - "; fi
+      if [ $DEBUG == 1 ]; then echo "$(date) - INFO: Adicionando 1 ao arquivo running... - "; fi
       echo "1" > $SCRIPT_HOME/running.log
       LOG
   fi
@@ -266,86 +268,86 @@ function LOCK()
 # Testando se o Ambiente esta em Cluster ou não
 if [ "$CLUSTER" == "Y" ]
 then
-  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Funcao LOCK - Inicio -"; fi
+  if [ $DEBUG == 1 ]; then echo "$(date) - INFO: Funcao LOCK - Inicio -"; fi
 
   PROD_SEQ1=$(sqlplus -s $PROD_CRED@$PROD_IP1/$PROD_SN/$PROD_SID1 <<EOF
   SET show OFF pagesize 0 feedback OFF termout ON TIME OFF timing OFF verify OFF echo OFF
-  SELECT max(sequence#) FROM v\$log_history where thread# = 1;
+  SELECT max(sequence#) FROM v\$log_history WHERE (RESETLOGS_CHANGE#) in (select max(RESETLOGS_CHANGE#) from v\$log_history) and thread# = 1;
   EXIT;
 EOF
 )
 
-  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: PROD_SEQ1=$PROD_SEQ1 -"; fi
+  if [ $DEBUG == 1 ]; then echo "$(date) - INFO: PROD_SEQ1=$PROD_SEQ1 -"; fi
 
   PROD_SEQ2=$(sqlplus -s $PROD_CRED@$PROD_IP2/$PROD_SN/$PROD_SID2 <<EOF
   SET show OFF pagesize 0 feedback OFF termout ON TIME OFF timing OFF verify OFF echo OFF
-  SELECT max(sequence#) FROM v\$log_history where thread# = 2;
+  SELECT max(sequence#) FROM v\$log_history WHERE (RESETLOGS_CHANGE#) in (select max(RESETLOGS_CHANGE#) from v\$log_history) and thread# = 2;
   EXIT;
 EOF
 )
 
-  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: PROD_SEQ2=$PROD_SEQ2 -"; fi
+  if [ $DEBUG == 1 ]; then echo "$(date) - INFO: PROD_SEQ2=$PROD_SEQ2 -"; fi
 
   STBY_SEQ1=$(sqlplus -s "/ as sysdba" <<EOF
   SET show OFF pagesize 0 feedback OFF termout ON TIME OFF timing OFF verify OFF echo OFF
-  SELECT max(sequence#) FROM v\$log_history where thread# = 1;
+  SELECT max(sequence#) FROM v\$log_history WHERE (RESETLOGS_CHANGE#) in (select max(RESETLOGS_CHANGE#) from v\$log_history) and thread# = 1;
   EXIT;
 EOF
 )
 
-  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: STBY_SEQ1=$STBY_SEQ1 -"; fi
+  if [ $DEBUG == 1 ]; then echo "$(date) - INFO: STBY_SEQ1=$STBY_SEQ1 -"; fi
 
   STBY_SEQ2=$(sqlplus -s "/ as sysdba" <<EOF
   SET show OFF pagesize 0 feedback OFF termout ON TIME OFF timing OFF verify OFF echo OFF
-  SELECT max(sequence#) FROM v\$log_history where thread# = 2;
+  SELECT max(sequence#) FROM v\$log_history WHERE (RESETLOGS_CHANGE#) in (select max(RESETLOGS_CHANGE#) from v\$log_history) and thread# = 2;
   EXIT;
 EOF
 )
 
-  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: STBY_SEQ2=$STBY_SEQ2 -"; fi
+  if [ $DEBUG == 1 ]; then echo "$(date) - INFO: STBY_SEQ2=$STBY_SEQ2 -"; fi
 
   DIFF_SEQ1=$(expr $PROD_SEQ1 - $STBY_SEQ1)
   DIFF_SEQ2=$(expr $PROD_SEQ2 - $STBY_SEQ2)
 
-  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: DIFF_SEQ1=$DIFF_SEQ1  DIFF_SEQ2=$DIFF_SEQ2 -"; fi
+  if [ $DEBUG == 1 ]; then echo "$(date) - INFO: DIFF_SEQ1=$DIFF_SEQ1  DIFF_SEQ2=$DIFF_SEQ2 -"; fi
 
 
   if [ "$DIFF_SEQ1" -ge "$MAX_DIFF"  ] || [ "$DIFF_SEQ2" -ge "$MAX_DIFF"  ] ;
     then
-      if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Diferenca maior que MAX_DIFF $MAX_DIFF - Saindo... -"; fi
+      if [ $DEBUG == 1 ]; then echo "$(date) - INFO: Diferenca maior que MAX_DIFF $MAX_DIFF - Saindo... -"; fi
       exit 0
   fi
 
 else
 
-  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Funcao LOCK - Inicio -"; fi
+  if [ $DEBUG == 1 ]; then echo "$(date) - INFO: Funcao LOCK - Inicio -"; fi
 
   PROD_SEQ1=$(sqlplus -s $PROD_CRED@$PROD_IP1/$PROD_SN/$PROD_SID1 <<EOF
   SET show OFF pagesize 0 feedback OFF termout ON TIME OFF timing OFF verify OFF echo OFF
-  SELECT max(sequence#) FROM v\$log_history where thread# = 1;
+  SELECT max(sequence#) FROM v\$log_history WHERE (RESETLOGS_CHANGE#) in (select max(RESETLOGS_CHANGE#) from v\$log_history) and thread# = 1;
   EXIT;
 EOF
 )
 
-  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: PROD_SEQ1=$PROD_SEQ1"; fi
+  if [ $DEBUG == 1 ]; then echo "$(date) - INFO: PROD_SEQ1=$PROD_SEQ1"; fi
 
   STBY_SEQ1=$(sqlplus -s "/ as sysdba" <<EOF
   SET show OFF pagesize 0 feedback OFF termout ON TIME OFF timing OFF verify OFF echo OFF
-  SELECT max(sequence#) FROM v\$log_history where thread# = 1;
+  SELECT max(sequence#) FROM v\$log_history WHERE (RESETLOGS_CHANGE#) in (select max(RESETLOGS_CHANGE#) from v\$log_history) and thread# = 1;
   EXIT;
 EOF
 )
 
-  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: STBY_SEQ1=$STBY_SEQ1 -"; fi
+  if [ $DEBUG == 1 ]; then echo "$(date) - INFO: STBY_SEQ1=$STBY_SEQ1 -"; fi
 
   DIFF_SEQ1=$(expr $PROD_SEQ1 - $STBY_SEQ1)
 
-  if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: DIFF_SEQ1=$DIFF_SEQ1"; fi
+  if [ $DEBUG == 1 ]; then echo "$(date) - INFO: DIFF_SEQ1=$DIFF_SEQ1"; fi
 
 
   if [ "$DIFF_SEQ1" -ge "$MAX_DIFF"  ] ;
   then
-      if [ $DEBUG -gt 0 ]; then echo "$(date) - INFO: Diferenca maior que MAX_DIFF $MAX_DIFF - Saindo..."; fi
+      if [ $DEBUG == 1 ]; then echo "$(date) - INFO: Diferenca maior que MAX_DIFF $MAX_DIFF - Saindo..."; fi
       exit 0
   fi
 

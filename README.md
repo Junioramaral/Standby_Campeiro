@@ -40,3 +40,51 @@ Cluster
     - PROD_IP2 - IP do No 2 - Producao
     - PROD_SID1 - SID do No 1 - Producao 
     - PROD_SID2 - SID do No 2 - Producao     
+
+
+
+
+
+----- Akterações e melhorias -------
+
+1) Ajustado para verificar se é Cluster ou não para usar o mesmo apply.sh
+
+2) Ajustes para a remoção dos archives que somente foram aplicados.
+
+SELECT 'rm -f /u01/archives/' || REPLACE(NAME, regexp_substr(NAME, '.*/')) from v$archived_log WHERE dest_id = 1 AND thread# = 1
+and sequence# between 143 and 146;
+
+3) Melhoria na leitura do archives a serem aplicados com ajuste na query para pegar o Incarnation atual
+
+SELECT max(sequence#) FROM v\$log_history WHERE (RESETLOGS_CHANGE#) in (select max(RESETLOGS_CHANGE#) from v\$log_history) and thread# = 1;
+
+
+
+STBY_ARCH=/u01/archives
+
+
+RM=$(sqlplus -s "/ as sysdba" <<EOF
+SET show OFF pagesize 0 feedback OFF termout ON TIME OFF timing OFF verify OFF trims ON
+SELECT 'rm -f $STBY_ARCH/'|| REPLACE(NAME, regexp_substr(NAME, '.*/')) file_name FROM v\$archived_log WHERE dest_id = 1 AND thread# = 1
+AND sequence# between $STBY_SEQ1 and $PROD_SEQ1
+UNION ALL
+SELECT 'rm -f $STBY_ARCH/'|| REPLACE(NAME, regexp_substr(NAME, '.*/')) file_name FROM v\$archived_log WHERE dest_id = 1 AND thread# = 2
+AND sequence# between $STBY_SEQ2 and $PROD_SEQ2;
+  EXIT;
+EOF
+)
+
+
+echo $RM
+
+
+SELECT 'rm -f $STBY_ARCH/'|| REPLACE(NAME, regexp_substr(NAME, '.*/')) file_name FROM v$archived_log WHERE dest_id = 1 AND thread# = 1
+AND sequence# between 140 and 156 order by sequence#
+
+
+
+
+
+Prioridades no atendimento:
+
+
