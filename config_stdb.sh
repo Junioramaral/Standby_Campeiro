@@ -259,7 +259,7 @@ HEADLINE
 	echo "LOG_DIR_APPLY=/home/oracle/ilegra/standby/${oraclesid}/logs"
 	
 	echo -e "\n# LOG_DIR_APPLY_RECOVERY - Diretório dos logs do apply"
-	echo "LOG_DIR_APPLY_RECOVERY=/home/oracle/ilegra/standby${oraclesid}/logs_recovery"
+	echo "LOG_DIR_APPLY_RECOVERY=/home/oracle/ilegra/standby/${oraclesid}/logs_recovery"
 	
 	echo -e "\n# MAX_DIFF - Diferença maxima aceita entre produção e standby"
 	echo "MAX_DIFF=500"
